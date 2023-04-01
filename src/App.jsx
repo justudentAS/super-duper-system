@@ -215,62 +215,67 @@ function App() {
     reader.readAsBinaryString(file);
   }, []);
 
-  const createTable = () => {
+  const createTable = (arrs) => {
+    const rows = arrs.flatMap((items) => {
+      return items.map((item) => {
+        const {id, description, quantity } = item;
+        const cells = [
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: `${id}`,
+                    bold: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: description,
+                    bold: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: `${quantity}`,
+                    bold: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ];
+  
+        return new TableRow({ children: cells });
+      });
+    });
+    
     return new Table({
-      rows: [
-        arrs.forEach(items => {
-          items.forEach(item => {
-
-
-            new TableRow({
-              children: [
-                new TableCell({
-                  children: [new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                      new TextRun({
-                        text: item.id,
-                        bold: true
-                      })
-                    ]
-                  })]
-                }),
-                new TableCell({
-                  children: [new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                      new TextRun({
-                        text: item.description,
-                        bold: true
-                      })
-                    ]
-                  })]
-                }),
-                new TableCell({
-                  children: [new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                      new TextRun({
-                        text: item.quantity,
-                        bold: true
-                      })
-                    ]
-                  })]
-                })
-              ]
-            })
-          })
-        }),
-      ],
+      rows,
       width: {
         size: 8000,
         type: WidthType.DXA,
-      }
-    })
-  }
+      },
+    });
+  };
 
   const startPdf = () => {
-    console.log(rows)
+    
     const doc = new Document({
       numbering: {
         config: [
@@ -401,7 +406,7 @@ function App() {
               after: 200
             }
           }),
-          createTable(),
+          createTable(rows),
           new Paragraph({
             text: "RESPONSABILIDADES ENTRE COMPRADORA E VENDEDORA",
             thematicBreak: true,
@@ -1394,6 +1399,7 @@ function App() {
         ],
       }]
     });
+    
     /*sections: [
         {
             properties: {},
