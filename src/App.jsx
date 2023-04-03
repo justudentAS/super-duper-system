@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import React, { useState, useCallback } from "react";
 import * as XLSX from "xlsx";
 import './App.css'
+import fs from "fs";
 
 const arrs = [[
   {
@@ -161,12 +162,75 @@ const arrs = [[
 
 function App() {
   const [rows, setRows] = useState([]);
+  const [paymentCondition, setPaymentCondition] = useState('');
+
+  function convertExcelToJson(file) {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const data = e.target.result;
+      const workbook = XLSX.read(data, { type: 'binary' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+      console.log(jsonData); // Output the JSON data to the console
+    };
+
+    reader.readAsBinaryString(file);
+  }
+  const paymentConditionsList = [
+    'INDENT DX   100% ANTECIPADO',
+    'INDENT DX  100% ANTECIPADO (2X)',
+    'DIRETO COM A PHILIPS   100% ANTECIPADO (sem sinal) ',
+    'DIRETO COM A PHILIPS  100% ANTECIPADO (2X)',
+    'DIRETO COM A PHILIPS  30 DDF',
+    'DIRETO COM A PHILIPS  30 / 60 DDF ',
+    'DIRETO COM A PHILIPS  A PARTIR DE 2X',
+    'DIRETO COM A PHILIPS  ENTRADA + 1X',
+    'DIRETO COM A PHILIPS  ENTRADA + A PARTIR DE 2X',
+    'FINANCIAMENTO BANCÁRIO  (Santander/Bradesco/DLL/Banco do Brasil/Unicred)  100% FINANCIADO',
+    'FINANCIAMENTO BANCÁRIO   (Santander/Bradesco/DLL/Banco do Brasil/Unicred)  ENTRADA + FINANCIAMENTO',
+    'FINANCIAMENTO BANCÁRIO   (BNB/Proger/Leasing/FCO/FNE/ Banco do Nordeste)  100% FINANCIADO',
+    'FINANCIAMENTO BANCÁRIO   (BNB/Proger/Leasing/FCO/FNE/ Banco do Nordeste)  ENTRADA + FINANCIAMENTO',
+    'CARTÃO DE CRÉDITO  100% VIA CARTÃO DE CRÉDITO (TODAS AS BANDEIRAS) * Mencionar o nº de parcelas, limitado ao máximo de 12 parcelas.'
+  ]
+  function extractPaymentCondition(jsonData) {
+    const row = jsonData.find(row => row['__EMPTY_2'] === 'Cond. Pagto')
+    const paymentCondition = row['__EMPTY_3'];
+    const splitCondition = paymentCondition.split(/[\(\)]/).map(s => s.trim())
+    let multiplier = parseInt(splitCondition[0].replace('x', ''));
+    let extractPaymentCondition = splitCondition[1]
+
+    let foundString = null; 
+
+    for (let i = 0; i < paymentConditionsList.length; i++) {
+      if (paymentConditionsList[i].includes(extractPaymentCondition)) { 
+        foundString = paymentConditionsList[i];  
+        break;  
+      }
+    }
+
+    console.log(foundString);
+    console.log(multiplier, extractPaymentCondition)
+    return paymentCondition;
+  }
+
+  const objWithPaymentCondition = (e) => {
+    const data = e.target.result;
+    const workbook = XLSX.read(data, { type: 'binary' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(sheet);
+    const paymentConditionValue = extractPaymentCondition(jsonData);
+    setPaymentCondition(paymentConditionValue);
+  }
 
   const handleFileUpload = useCallback((e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
+        objWithPaymentCondition(event);
         const binaryStr = event.target.result;
         const workbook = XLSX.read(binaryStr, { type: "binary" });
         const [sheetName] = workbook.SheetNames;
@@ -218,7 +282,7 @@ function App() {
   const createTable = (arrs) => {
     const rows = arrs.flatMap((items) => {
       return items.map((item) => {
-        const {id, description, quantity } = item;
+        const { id, description, quantity } = item;
         const cells = [
           new TableCell({
             children: [
@@ -260,11 +324,68 @@ function App() {
             ],
           }),
         ];
-  
+
         return new TableRow({ children: cells });
       });
     });
-    
+
+    return new Table({
+      rows,
+      width: {
+        size: 8000,
+        type: WidthType.DXA,
+      },
+    });
+  };
+
+  const teste = (items) => {
+    const rows = items.map((item) => {
+      const { id, description, quantity } = item;
+      const cells = [
+        new TableCell({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: `${id}`,
+                  bold: true,
+                }),
+              ],
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: description,
+                  bold: true,
+                }),
+              ],
+            }),
+          ],
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: `${quantity}`,
+                  bold: true,
+                }),
+              ],
+            }),
+          ],
+        }),
+      ];
+
+      return new TableRow({ children: cells });
+    });
+
     return new Table({
       rows,
       width: {
@@ -275,7 +396,7 @@ function App() {
   };
 
   const startPdf = () => {
-    
+
     const doc = new Document({
       numbering: {
         config: [
@@ -406,7 +527,8 @@ function App() {
               after: 200
             }
           }),
-          createTable(rows),
+          rows.forEach(row => teste(row)),
+          //createTable(rows),
           new Paragraph({
             text: "RESPONSABILIDADES ENTRE COMPRADORA E VENDEDORA",
             thematicBreak: true,
@@ -1399,7 +1521,7 @@ function App() {
         ],
       }]
     });
-    
+
     /*sections: [
         {
             properties: {},
@@ -1439,6 +1561,7 @@ function App() {
       <h1>Vite + React</h1>
       <div className="card">
         <input type="file" onChange={handleFileUpload} />
+        <div>Valor da chave "Cond. Pagto": {paymentCondition}</div>
         <ul>
           {rows.map((group, groupIndex) => (
             <li key={groupIndex}>
