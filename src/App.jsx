@@ -194,6 +194,18 @@ function App() {
     'FINANCIAMENTO BANCÁRIO   (BNB/Proger/Leasing/FCO/FNE/ Banco do Nordeste)  ENTRADA + FINANCIAMENTO',
     'CARTÃO DE CRÉDITO  100% VIA CARTÃO DE CRÉDITO (TODAS AS BANDEIRAS) * Mencionar o nº de parcelas, limitado ao máximo de 12 parcelas.'
   ]
+  function separateFromList(extractPaymentCondition) {
+    let foundString = null;
+
+    for (let i = 0; i < paymentConditionsList.length; i++) {
+      if (paymentConditionsList[i].includes(extractPaymentCondition)) {
+        foundString = paymentConditionsList[i];
+        break;
+      }
+    }
+    return foundString;
+  }
+  
   function extractPaymentCondition(jsonData) {
     const row = jsonData.find(row => row['__EMPTY_2'] === 'Cond. Pagto')
     const paymentCondition = row['__EMPTY_3'];
@@ -201,14 +213,7 @@ function App() {
     let multiplier = parseInt(splitCondition[0].replace('x', ''));
     let extractPaymentCondition = splitCondition[1]
 
-    let foundString = null; 
-
-    for (let i = 0; i < paymentConditionsList.length; i++) {
-      if (paymentConditionsList[i].includes(extractPaymentCondition)) { 
-        foundString = paymentConditionsList[i];  
-        break;  
-      }
-    }
+    let foundString = separateFromList(extractPaymentCondition);
 
     console.log(foundString);
     console.log(multiplier, extractPaymentCondition)
@@ -1585,6 +1590,8 @@ function App() {
       </p>
     </div>
   )
+
+  
 }
 
 export default App
