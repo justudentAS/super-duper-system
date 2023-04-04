@@ -210,13 +210,13 @@ function App() {
     const row = jsonData.find(row => row['__EMPTY_2'] === 'Cond. Pagto')
     const paymentCondition = row['__EMPTY_3'];
     const splitCondition = paymentCondition.split(/[\(\)]/).map(s => s.trim())
-    let multiplier = parseInt(splitCondition[0].replace('x', ''));
+    let multiplier = splitCondition[0];
     let extractPaymentCondition = splitCondition[1]
 
     let foundString = separateFromList(extractPaymentCondition);
 
     console.log(foundString);
-    console.log(multiplier, extractPaymentCondition)
+    console.log(`${multiplier} ${foundString}`)
     return paymentCondition;
   }
 
